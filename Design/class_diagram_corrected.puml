@@ -1,0 +1,211 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 55
+skinparam class {
+  BackgroundColor #FDF6E3
+  BorderColor #657B83
+}
+
+' ================= ENUMERATIONS =================
+
+enum MemberStatus {
+  Active
+  PaymentPending
+  Suspended
+  TerminationScheduled
+  Inactive
+}
+
+enum BookingStatus {
+  Confirmed
+  CheckedIn
+  NoShow
+  Cancelled
+}
+
+enum PlanType {
+  DayPass
+  PartTime
+  FullTime
+}
+
+enum BookingChannel {
+  Online
+  Reception
+}
+
+' ================= ACCOUNTS =================
+
+class Member {
+  - name : string
+  - email : string
+  - passwordHash : string
+  - status : MemberStatus
+  + scheduleTermination()
+  + reactivate()
+}
+
+class StaffUser {
+  - name : string
+  - email : string
+  - passwordHash : string
+  - role : StaffRole
+}
+
+enum StaffRole {
+  Receptionist
+  Manager
+  Administrator
+}
+
+' ================= PLANS & QUOTAS =================
+
+class Plan {
+  - name : string
+  - type : PlanType
+  - monthlyPrice : decimal
+  - includedMeetingRoomHours : int
+  - includedDeskDays : int
+  - unlimitedDeskAccess : bool
+  - extraHourPrice : decimal
+  - extraDayPrice : decimal
+}
+
+class MonthlyUsage {
+  - month : YearMonth
+  - meetingRoomHoursUsed : int
+  - deskDaysUsed : int
+}
+note right of MonthlyUsage
+  Consumption per member per month.
+  Remaining quota = Plan allowance − usage.
+  New month = new record (FR-C3: no carry-over).
+end note
+
+' ================= LOCATIONS & RESOURCES =================
+
+class Location {
+  - name : string
+  - address : string
+  - openingHours : WeeklySchedule
+  - closedDays : List<DateOnly>
+}
+
+abstract class Resource {
+  - name : string
+  - isOutOfService : bool
+  + isBookable() : bool
+}
+
+class MeetingRoom {
+  - capacity : int
+  + isBookable() : bool = true
+}
+
+class Desk {
+  + isBookable() : bool = true
+}
+
+class PrivateOffice {
+  + isBookable() : bool = false
+}
+note bottom of PrivateOffice
+  FR-B4: displayed as occupied,
+  never bookable online
+  (annual offline contracts)
+end note
+
+' ================= BOOKING =================
+
+class Booking {
+  - start : DateTime
+  - end : DateTime
+  - status : BookingStatus
+  - channel : BookingChannel
+  + cancel()
+  + modify(newSlot)
+  + checkIn()
+  + markNoShow()
+}
+note right of Booking
+  cancel()/modify() enforce
+  the 24h rules (FR-B12..14).
+  Availability is DERIVED:
+  no overlapping booking
+  + location open + in service.
+end note
+
+' ================= BILLING =================
+
+class Invoice {
+  - month : YearMonth
+  - status : InvoiceStatus
+  + total() : decimal
+}
+
+enum InvoiceStatus {
+  Draft
+  Issued
+  Paid
+  Failed
+}
+
+class InvoiceLine {
+  - label : string
+  - amount : decimal
+}
+note right of InvoiceLine
+  Plan fee, extra hours/days,
+  and dispute ADJUSTMENTS
+  (negative amounts) — FR-D3
+end note
+
+class Payment {
+  - date : DateTime
+  - amount : decimal
+  - channel : BookingChannel
+  - providerReference : string
+}
+note right of Payment
+  Only a provider token/reference.
+  Card data NEVER stored (NFR-3).
+end note
+
+class AuditEntry {
+  - date : DateTime
+  - action : string
+  - justification : string
+}
+note bottom of AuditEntry
+  FR-D3: manual suspensions and
+  dispute resolutions keep a
+  mandatory justification note.
+end note
+
+' ================= RELATIONSHIPS =================
+
+Member "0..*" --> "1" Plan : subscribes to
+Member "1" *-- "0..*" MonthlyUsage
+Member "1" --> "0..*" Booking : places
+Booking "0..*" --> "1" Resource : reserves
+Location "1" *-- "1..*" Resource : hosts
+StaffUser "0..*" --> "0..1" Location : assigned to
+
+MeetingRoom --|> Resource
+Desk --|> Resource
+PrivateOffice --|> Resource
+
+Member "1" --> "0..*" Invoice
+Invoice "1" *-- "1..*" InvoiceLine
+Invoice "1" --> "0..*" Payment
+StaffUser "1" --> "0..*" AuditEntry : performs
+AuditEntry "0..*" --> "0..1" Member : concerns
+AuditEntry "0..*" --> "0..1" Invoice : concerns
+
+Member -[hidden]right- Plan
+Location -[hidden]down- Resource
+
+@enduml

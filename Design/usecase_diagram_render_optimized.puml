@@ -1,0 +1,112 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam linetype ortho
+skinparam nodesep 12
+skinparam ranksep 100
+skinparam ArrowColor #666666
+skinparam actorBorderColor #2E5A88
+skinparam usecase {
+  BackgroundColor #FDF6E3
+  BorderColor #657B83
+  FontSize 12
+}
+
+' ---------- HUMAN ACTORS (left) ----------
+actor "New Customer" as NewCustomer
+actor "Member" as Member
+actor "Plan Member" as PlanMember
+actor "Day-Pass\nCustomer" as DayPass
+actor "Receptionist" as Receptionist
+actor "Manager" as Manager
+actor "Administrator" as Administrator
+
+PlanMember -up-|> Member
+DayPass -up-|> Member
+
+' ---------- SYSTEM ----------
+rectangle "<size:16><b>Coworking Reservation Platform</b></size>" {
+
+package "Authentication" {
+  usecase "Create account" as UC_Create
+  usecase "Log in / log out" as UC_Login
+  usecase "Reset password" as UC_Reset
+}
+
+package "Booking" {
+  usecase "See available resources" as UC_See
+  usecase "See remaining quotas" as UC_Quotas
+  usecase "Book a resource" as UC_Book
+  usecase "Confirm extra charges" as UC_Extra
+  usecase "Send confirmation and\nreminder emails" as UC_Email
+  usecase "Cancel a booking" as UC_Cancel
+  usecase "Modify a booking" as UC_Modify
+  usecase "See the day's bookings" as UC_Day
+  usecase "Check members in" as UC_CheckIn
+  usecase "Create walk-in booking\nand take payment" as UC_WalkIn
+}
+
+package "Billing" {
+  usecase "Choose a membership plan" as UC_Plan
+  usecase "Upgrade or downgrade plan" as UC_Change
+  usecase "Cancel plan" as UC_CancelPlan
+  usecase "Choose payment method" as UC_PayMethod
+  usecase "Bill plan members monthly\n(time-triggered)" as UC_Monthly
+  usecase "Handle failed payment\n(retry, notify, grace, suspend)" as UC_Failed
+}
+
+package "Administration / Reporting" {
+  usecase "View location reports\n(occupancy, most-booked, revenue)" as UC_Reports
+  usecase "Manage location resources,\nopening hours, closed days" as UC_Resources
+  usecase "Suspend members / resolve\ndisputes (justification note)" as UC_Suspend
+  usecase "Manage plans, pricing and\nquotas (network-wide)" as UC_Plans
+}
+}
+
+' ---------- EXTERNAL SYSTEMS (right) ----------
+rectangle "Payment Provider\n<<external system>>" as Payment
+rectangle "Email Provider\n<<external system>>" as EmailP
+
+' ---------- ASSOCIATIONS ----------
+NewCustomer --> UC_Create
+
+Member --> UC_Login
+Member --> UC_Reset
+Member --> UC_See
+Member --> UC_Quotas
+Member --> UC_Book
+Member --> UC_Cancel
+Member --> UC_Modify
+Member --> UC_PayMethod
+
+PlanMember --> UC_Plan
+PlanMember --> UC_Change
+PlanMember --> UC_CancelPlan
+
+Receptionist --> UC_Day
+Receptionist --> UC_CheckIn
+Receptionist --> UC_WalkIn
+
+Manager --> UC_Day
+Manager --> UC_Reports
+Manager --> UC_Resources
+Manager --> UC_Suspend
+
+Administrator --> UC_Plans
+
+' ---------- INCLUDE / EXTEND ----------
+UC_Book .> UC_See : <<include>>
+UC_Book .> UC_Email : <<include>>
+UC_Extra .> UC_Book : <<extend>>
+
+' ---------- EXTERNAL LINKS ----------
+UC_Book --> Payment
+UC_PayMethod --> Payment
+UC_WalkIn --> Payment
+UC_Monthly --> Payment
+UC_Failed --> Payment
+UC_Email --> EmailP
+UC_Failed --> EmailP
+
+@enduml

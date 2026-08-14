@@ -1,0 +1,200 @@
+@startuml
+
+left to right direction
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+skinparam rectangle {
+    RoundCorner 0
+}
+
+' =========================================================
+' LEFT - HUMAN ACTORS (with Member generalization)
+' =========================================================
+
+together {
+    actor "New Customer" as NewCustomer
+    actor "Member" as Member
+    actor "Plan Member" as PlanMember
+    actor "Day-Pass Customer" as DayPassCustomer
+    actor "Receptionist" as Receptionist
+    actor "Manager" as Manager
+    actor "Administrator" as Administrator
+}
+
+' Generalization: both member types ARE members
+PlanMember --|> Member
+DayPassCustomer --|> Member
+
+NewCustomer -[hidden]down-> Member
+Member -[hidden]down-> PlanMember
+PlanMember -[hidden]down-> DayPassCustomer
+DayPassCustomer -[hidden]down-> Receptionist
+Receptionist -[hidden]down-> Manager
+Manager -[hidden]down-> Administrator
+
+' =========================================================
+' CENTER - SYSTEM
+' =========================================================
+
+rectangle "<size:18><b>Coworking Reservation Platform</b></size>" as System {
+
+    ' =====================================================
+    ' AUTHENTICATION
+    ' =====================================================
+
+    package "Authentication" {
+        usecase "Create account" as UC_CreateAccount
+        usecase "Log in / log out" as UC_Login
+        usecase "Reset password" as UC_ResetPassword
+
+        UC_CreateAccount -[hidden]down-> UC_Login
+        UC_Login -[hidden]down-> UC_ResetPassword
+    }
+
+    ' =====================================================
+    ' BOOKING
+    ' =====================================================
+
+    package "Booking" {
+        usecase "See available\nresources" as UC_SeeResources
+        usecase "See remaining\nquotas" as UC_SeeQuotas
+        usecase "Book a resource" as UC_BookResource
+        usecase "Confirm extra\ncharges" as UC_ExtraCharges
+        usecase "Send confirmation\nand reminder emails" as UC_SendEmail
+        usecase "Cancel a booking" as UC_CancelBooking
+        usecase "Modify a booking" as UC_ModifyBooking
+        usecase "See the day's\nbookings" as UC_SeeTodayBookings
+        usecase "Check members in" as UC_CheckInMembers
+        usecase "Create walk-in booking\nand take payment" as UC_WalkIn
+
+        UC_SeeResources -[hidden]right-> UC_BookResource
+        UC_SeeQuotas -[hidden]right-> UC_BookResource
+        UC_BookResource -[hidden]right-> UC_SendEmail
+        UC_BookResource -[hidden]down-> UC_ExtraCharges
+        UC_ExtraCharges -[hidden]down-> UC_CancelBooking
+        UC_CancelBooking -[hidden]down-> UC_ModifyBooking
+        UC_ModifyBooking -[hidden]down-> UC_SeeTodayBookings
+        UC_SeeTodayBookings -[hidden]down-> UC_CheckInMembers
+        UC_CheckInMembers -[hidden]right-> UC_WalkIn
+    }
+
+    ' =====================================================
+    ' BILLING
+    ' =====================================================
+
+    package "Billing" {
+        usecase "Choose a\nmembership plan" as UC_ChoosePlan
+        usecase "Upgrade or\ndowngrade plan" as UC_ChangePlan
+        usecase "Cancel plan" as UC_CancelPlan
+        usecase "Choose payment\nmethod" as UC_ChoosePaymentMethod
+        usecase "Bill plan members\nmonthly" as UC_MonthlyBilling
+        usecase "Handle failed payment\n(retry, notify, grace, suspend)" as UC_FailedPayment
+
+        note bottom of UC_MonthlyBilling
+            Time-triggered
+            (scheduler, end of billing month)
+        end note
+
+        UC_ChoosePlan -[hidden]down-> UC_ChangePlan
+        UC_ChangePlan -[hidden]down-> UC_CancelPlan
+        UC_CancelPlan -[hidden]down-> UC_ChoosePaymentMethod
+        UC_ChoosePaymentMethod -[hidden]down-> UC_MonthlyBilling
+        UC_MonthlyBilling -[hidden]down-> UC_FailedPayment
+    }
+
+    ' =====================================================
+    ' ADMIN / REPORTING
+    ' =====================================================
+
+    package "Administration / Reporting" {
+        usecase "View location reports\n(occupancy, most-booked,\nrevenue)" as UC_Reports
+        usecase "Manage location resources,\nopening hours, closed days" as UC_ManageResources
+        usecase "Suspend members /\nresolve disputes\n(justification note)" as UC_SuspendResolve
+        usecase "Manage plans, pricing\nand quotas (network-wide)" as UC_ManagePlans
+
+        UC_Reports -[hidden]down-> UC_ManageResources
+        UC_ManageResources -[hidden]down-> UC_SuspendResolve
+        UC_SuspendResolve -[hidden]down-> UC_ManagePlans
+    }
+
+    UC_ResetPassword -[hidden]down-> UC_SeeResources
+    UC_SeeResources -[hidden]right-> UC_ChoosePlan
+    UC_ChoosePaymentMethod -[hidden]down-> UC_Reports
+}
+
+' =========================================================
+' RIGHT - EXTERNAL ACTORS
+' =========================================================
+
+together {
+    rectangle "Payment Provider\n<<external system>>" as PaymentProvider
+    rectangle "Email Provider\n<<external system>>" as EmailProvider
+}
+
+PaymentProvider -[hidden]down-> EmailProvider
+
+Receptionist -[hidden]right-> System
+System -[hidden]right-> PaymentProvider
+
+' =========================================================
+' ASSOCIATIONS - HUMANS
+' =========================================================
+
+NewCustomer -right-> UC_CreateAccount
+
+Member -right-> UC_Login
+Member -right-> UC_ResetPassword
+Member -right-> UC_SeeResources
+Member -right-> UC_SeeQuotas
+Member -right-> UC_BookResource
+Member -right-> UC_CancelBooking
+Member -right-> UC_ModifyBooking
+Member -right-> UC_ChoosePaymentMethod
+
+' Plan management concerns Plan Members only
+PlanMember -right-> UC_ChoosePlan
+PlanMember -right-> UC_ChangePlan
+PlanMember -right-> UC_CancelPlan
+
+Receptionist -right-> UC_SeeTodayBookings
+Receptionist -right-> UC_CheckInMembers
+Receptionist -right-> UC_WalkIn
+
+Manager -right-> UC_SeeTodayBookings
+Manager -right-> UC_Reports
+Manager -right-> UC_ManageResources
+Manager -right-> UC_SuspendResolve
+
+Administrator -right-> UC_ManagePlans
+
+' =========================================================
+' INCLUDE RELATIONS (base ..> included)
+' =========================================================
+
+UC_BookResource ..> UC_SeeResources : <<include>>
+UC_BookResource ..> UC_SendEmail : <<include>>
+
+' =========================================================
+' EXTEND RELATIONS (extension ..> base)
+' =========================================================
+
+' Only when the booking exceeds the remaining quota (FR-B10)
+UC_ExtraCharges ..> UC_BookResource : <<extend>>
+
+' =========================================================
+' EXTERNAL SYSTEM ASSOCIATIONS
+' =========================================================
+
+' Day-Pass online bookings are prepaid at booking time (FR-C5)
+UC_BookResource -right-> PaymentProvider
+UC_ChoosePaymentMethod -right-> PaymentProvider
+UC_WalkIn -right-> PaymentProvider
+UC_MonthlyBilling -right-> PaymentProvider
+UC_FailedPayment -right-> PaymentProvider
+
+UC_SendEmail -right-> EmailProvider
+UC_FailedPayment -right-> EmailProvider
+
+@enduml

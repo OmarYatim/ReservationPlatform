@@ -1,0 +1,232 @@
+@startuml
+
+left to right direction
+
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+skinparam rectangle {
+    RoundCorner 0
+}
+
+' =========================================================
+' LEFT - HUMAN ACTORS
+' =========================================================
+
+together {
+    actor "New Customer" as NewCustomer
+    actor "Member\n(Plan Member / Day-Pass Customer)" as Member
+    actor "Receptionist" as Receptionist
+    actor "Manager" as Manager
+    actor "Administrator" as Administrator
+}
+
+NewCustomer -[hidden]down-> Member
+Member -[hidden]down-> Receptionist
+Receptionist -[hidden]down-> Manager
+Manager -[hidden]down-> Administrator
+
+
+' =========================================================
+' CENTER - SYSTEM
+' =========================================================
+
+rectangle "<size:18><b>Reservation Web Platform</b></size>" as System {
+
+    ' =====================================================
+    ' AUTHENTIFICATION
+    ' =====================================================
+
+    package "Authentification" {
+
+        usecase "Create account" as UC_CreateAccount
+        usecase "Reset Password" as UC_ResetPassword
+
+        UC_CreateAccount -[hidden]down-> UC_ResetPassword
+    }
+
+
+    ' =====================================================
+    ' BOOKING
+    ' =====================================================
+
+    package "Booking" {
+
+        usecase "See available\nresources" as UC_SeeResources
+        usecase "See remaining\nquotas" as UC_SeeQuotas
+        usecase "Send email confirmation\nand reminder" as UC_SendEmail
+
+        usecase "Book a resource" as UC_BookResource
+
+        usecase "Cancel a booking" as UC_CancelBooking
+        usecase "Modify a booking" as UC_ModifyBooking
+
+        usecase "See today's booking" as UC_SeeTodayBookings
+        usecase "Check members in" as UC_CheckInMembers
+        usecase "Create bookings\nand take payments" as UC_CreateBookingsTakePayments
+
+
+        ' ---------------------------------------------
+        ' Position included use cases around Book
+        ' ---------------------------------------------
+
+        UC_SeeResources -[hidden]right-> UC_BookResource
+        UC_SeeQuotas -[hidden]right-> UC_BookResource
+
+        UC_BookResource -[hidden]right-> UC_SendEmail
+
+        UC_BookResource -[hidden]down-> UC_CancelBooking
+        UC_CancelBooking -[hidden]down-> UC_ModifyBooking
+
+        UC_ModifyBooking -[hidden]down-> UC_SeeTodayBookings
+        UC_SeeTodayBookings -[hidden]down-> UC_CheckInMembers
+        UC_CheckInMembers -[hidden]right-> UC_CreateBookingsTakePayments
+    }
+
+
+    ' =====================================================
+    ' BILLING
+    ' =====================================================
+
+    package "Billing" {
+
+        usecase "Choose a membership\nplan" as UC_ChoosePlan
+        usecase "Upgrade or downgrade\na plan" as UC_ChangePlan
+        usecase "Cancel my plan" as UC_CancelPlan
+        usecase "Choose payment\nmethod" as UC_ChoosePaymentMethod
+        usecase "Notify when\npayment fails" as UC_NotifyPaymentFails
+
+        UC_ChoosePlan -[hidden]down-> UC_ChangePlan
+        UC_ChangePlan -[hidden]down-> UC_CancelPlan
+        UC_CancelPlan -[hidden]down-> UC_ChoosePaymentMethod
+        UC_ChoosePaymentMethod -[hidden]down-> UC_NotifyPaymentFails
+    }
+
+
+    ' =====================================================
+    ' ADMIN / REPORTING
+    ' =====================================================
+
+    package "Admin / Reporting" {
+
+        usecase "See location's\nrevenues" as UC_SeeRevenues
+        usecase "Manage location\nresources" as UC_ManageResources
+        usecase "Suspend members and\nresolve billing disputes" as UC_SuspendResolve
+        usecase "Manage plans" as UC_ManagePlans
+
+        UC_SeeRevenues -[hidden]down-> UC_ManageResources
+        UC_ManageResources -[hidden]down-> UC_SuspendResolve
+        UC_SuspendResolve -[hidden]down-> UC_ManagePlans
+    }
+
+
+    ' =====================================================
+    ' PACKAGE POSITIONING
+    ' =====================================================
+
+    UC_ResetPassword -[hidden]down-> UC_SeeResources
+    UC_SeeResources -[hidden]right-> UC_ChoosePlan
+    UC_ChoosePaymentMethod -[hidden]down-> UC_SeeRevenues
+}
+
+
+' =========================================================
+' RIGHT - EXTERNAL ACTORS
+' =========================================================
+
+together {
+    rectangle "Payment Provider\n<<external system>>" as PaymentProvider
+    rectangle "Email Provider\n<<external system>>" as EmailProvider
+}
+
+PaymentProvider -[hidden]down-> EmailProvider
+
+
+' =========================================================
+' FORCE LEFT / CENTER / RIGHT
+' =========================================================
+
+Receptionist -[hidden]right-> System
+System -[hidden]right-> PaymentProvider
+
+
+' =========================================================
+' NEW CUSTOMER
+' =========================================================
+
+NewCustomer -right-> UC_CreateAccount
+
+
+' =========================================================
+' MEMBER
+' =========================================================
+
+Member -right-> UC_ResetPassword
+Member -right-> UC_SeeResources
+Member -right-> UC_SeeQuotas
+Member -right-> UC_BookResource
+Member -right-> UC_CancelBooking
+Member -right-> UC_ModifyBooking
+Member -right-> UC_ChoosePlan
+Member -right-> UC_ChangePlan
+Member -right-> UC_CancelPlan
+Member -right-> UC_ChoosePaymentMethod
+
+
+' =========================================================
+' RECEPTIONIST
+' =========================================================
+
+Receptionist -right-> UC_SeeTodayBookings
+Receptionist -right-> UC_CheckInMembers
+Receptionist -right-> UC_CreateBookingsTakePayments
+
+
+' =========================================================
+' MANAGER
+' =========================================================
+
+Manager -right-> UC_SeeRevenues
+Manager -right-> UC_ManageResources
+Manager -right-> UC_SuspendResolve
+
+
+' =========================================================
+' ADMINISTRATOR
+' =========================================================
+
+Administrator -right-> UC_ManagePlans
+
+
+' =========================================================
+' INCLUDE RELATIONS
+' =========================================================
+
+UC_BookResource ..> UC_SeeResources : <<include>>
+UC_BookResource ..> UC_SeeQuotas : <<include>>
+UC_BookResource ..> UC_SendEmail : <<include>>
+
+
+' =========================================================
+' EXTEND RELATION
+' =========================================================
+
+UC_CheckInMembers ..> UC_CreateBookingsTakePayments : <<extend>>
+
+
+' =========================================================
+' PAYMENT PROVIDER
+' =========================================================
+
+UC_ChoosePaymentMethod -right-> PaymentProvider
+UC_CreateBookingsTakePayments -right-> PaymentProvider
+
+
+' =========================================================
+' EMAIL PROVIDER
+' =========================================================
+
+UC_SendEmail -right-> EmailProvider
+UC_NotifyPaymentFails -right-> EmailProvider
+
+@enduml

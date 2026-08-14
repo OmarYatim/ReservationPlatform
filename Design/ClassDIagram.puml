@@ -1,0 +1,174 @@
+@startuml
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+' =========================================================
+' PLAN
+' =========================================================
+
+class Plan {
+    quota : int
+    price : double
+}
+
+
+' =========================================================
+' PAYMENT PROVIDER
+' =========================================================
+
+class PaymentProvider {
+    cardNumber : string
+    expirationDate : string
+    securityCode : string
+
+    +Pay()
+}
+
+
+' =========================================================
+' EMAIL PROVIDER
+' =========================================================
+
+class EmailProvider {
+    +SendConfirmationEmail()
+    +SendReminderEmail()
+    +SendPaymentFailedEmail()
+}
+
+
+' =========================================================
+' LOCATION
+' =========================================================
+
+class Location {
+    resources : List<IBookable>
+    openingHour : TimeOnly
+    closingHour : TimeOnly
+}
+
+
+' =========================================================
+' BOOKABLE
+' =========================================================
+
+interface IBookable {
+    availability : List<Date>
+    location : Location
+
+    +CheckIn()
+}
+
+
+' =========================================================
+' MEMBER
+' =========================================================
+
+class Member {
+    plan : Plan
+    bookings : List<Booking>
+    paymentMethods : List<PaymentProvider>
+    email : string
+    deskQuota : int
+    MeetingRoomsQuota : int
+}
+
+
+' =========================================================
+' MANAGER
+' =========================================================
+
+class Manager {
+    +ListLocationRevenue()
+    +ListLocationOccupancy()
+    +ListTopBookedRooms()
+    +UpdateResource(Resource resource)
+    +AddResource()
+    +RemoveResource(Resource resource)
+    +ModifyOpeningHours()
+    +SuspendMember(Member member)
+}
+
+
+' =========================================================
+' BOOKING STATUS
+' =========================================================
+
+enum BookingStatus {
+    CheckedIn
+    Booked
+    NoShow
+    Cancelled
+}
+
+
+' =========================================================
+' BOOKING
+' =========================================================
+
+class Booking {
+    status : BookingStatus
+
+    +Cancel()
+    +CheckIn()
+}
+
+
+' =========================================================
+' RECEPTIONIST
+' =========================================================
+
+class Receptionist {
+    +CheckIn(Booking booking)
+    +ListDayBookings()
+}
+
+
+' =========================================================
+' ADMINISTRATOR
+' =========================================================
+
+class Administrator {
+    +UpdatePlan(Plan plan)
+    +DeletePlan(Plan plan)
+    +AddPlan()
+}
+
+
+' =========================================================
+' DESK
+' =========================================================
+
+class Desk
+
+
+' =========================================================
+' MEETING ROOMS
+' =========================================================
+
+class MeetingRooms
+
+
+' =========================================================
+' INHERITANCE
+' =========================================================
+
+IBookable <|.. Desk
+IBookable <|.. MeetingRooms
+
+
+' =========================================================
+' MEMBER - PAYMENT PROVIDER AGGREGATION
+' =========================================================
+
+Member "1" o-- "0..*" PaymentProvider : paymentMethods
+
+
+' =========================================================
+' LOCATION - BOOKABLE RELATIONSHIP
+' =========================================================
+
+Location "1" -- "0..*" IBookable : resources
+
+
+@enduml
