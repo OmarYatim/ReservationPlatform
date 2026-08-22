@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ReservationPlatform.API/ReservationPlatform.API.csproj" />
+    <Project Path="src/ReservationPlatform.Domain/ReservationPlatform.Domain.csproj" />
+    <Project Path="src/ReservationPlatform.Infrastructure/ReservationPlatform.Infrastructure.csproj" />
+  </Folder>
+</Solution>
