@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ReservationPlatform.Domain\ReservationPlatform.Domain.csproj" />
     <ProjectReference Include="..\ReservationPlatform.Infrastructure\ReservationPlatform.Infrastructure.csproj" />
+    <ProjectReference Include="..\ReservationPlatform.Application\ReservationPlatform.Application.csproj" />
   </ItemGroup>
 
 </Project>
