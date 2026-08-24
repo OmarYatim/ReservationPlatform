@@ -1,0 +1,32 @@
+﻿namespace ReservationPlatform.Domain;
+
+public class Member
+{
+    public Guid Id { get; private set; }
+    public string Name { get; private set; }
+    public string Email { get; private set; }
+    public string PasswordHash { get; private set; }
+
+    public Member(string name, string email, string passwordHash)
+    {
+        Id = Guid.NewGuid();
+        Name = name;
+        Email = email;
+        PasswordHash = passwordHash;
+    }
+
+    public void UpdateName(string name)
+    {
+        Name = name;
+    }
+
+    public void UpdateEmail(string email)
+    {
+        Email = email;
+    }
+
+    public void UpdatePasswordHash(string passwordHash)
+    {
+        PasswordHash = passwordHash;
+    }
+}
