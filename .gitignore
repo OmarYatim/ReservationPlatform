@@ -71,4 +71,9 @@ psd
 thumb
 sketch
 
+.idea/
+
+CLAUDE.md
+STATUS.md
+
 # End of https://mrkandreev.name/snippets/gitignore-generator/#react
